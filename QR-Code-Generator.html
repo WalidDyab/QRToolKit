@@ -1,0 +1,1666 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Code & Contact Card Generator</title>
+  <style>
+    :root {
+      --ink: #132033;
+      --muted: #64748b;
+      --paper: #fbfdff;
+      --panel: #ffffff;
+      --navy: #0f2342;
+      --blue: #2563eb;
+      --blue-soft: #dbeafe;
+      --sky: #eaf6ff;
+      --line: #d8e3f2;
+      --shadow: 0 20px 60px rgba(15, 35, 66, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.16), transparent 32rem),
+        linear-gradient(135deg, #eef7ff 0%, #f8fbff 100%);
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      line-height: 1.45;
+    }
+
+    .app-header {
+      max-width: 1040px;
+      width: min(1040px, calc(100vw - 32px));
+      margin: 28px auto 0;
+      padding: 30px 34px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(251, 253, 255, 0.92);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .app-header::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 8px;
+      background: linear-gradient(90deg, var(--navy), var(--blue), #8cc9ff);
+    }
+
+    .top-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .brand {
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .nav-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .nav-link {
+      border: 1px solid var(--line);
+      background: #ffffff;
+      color: var(--navy);
+      box-shadow: none;
+    }
+
+    .nav-link.is-active {
+      background: var(--navy);
+      color: #ffffff;
+    }
+
+    .hero-title {
+      max-width: 820px;
+      margin: 0;
+      font-size: clamp(36px, 5vw, 58px);
+      line-height: 1;
+    }
+
+    .hero-subtitle {
+      max-width: 760px;
+      margin: 14px 0 0;
+      color: #34435a;
+      font-size: 18px;
+      line-height: 1.55;
+    }
+
+    .app-view {
+      display: none;
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    .app-view.is-active {
+      display: block;
+      animation: fadeViewIn 240ms ease forwards;
+    }
+
+    .app-view.is-leaving {
+      display: block;
+      animation: fadeViewOut 180ms ease forwards;
+    }
+
+    @keyframes fadeViewIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeViewOut {
+      from {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      to {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+    }
+
+    .sheet {
+      max-width: 1040px;
+      width: min(1040px, calc(100vw - 32px));
+      margin: 32px auto;
+      padding: 44px;
+      background: var(--paper);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+
+    .sheet::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 8px;
+      border-radius: 16px 16px 0 0;
+      background: linear-gradient(90deg, var(--navy), var(--blue), #8cc9ff);
+    }
+
+    .sheet > header {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 42px;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .headline {
+      margin: 10px 0 12px;
+      color: var(--blue);
+      font-size: 15.5px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .profile {
+      max-width: 620px;
+      margin: 0 0 20px;
+      color: #34435a;
+      font-size: 15px;
+    }
+
+    .generator-form {
+      display: grid;
+      gap: 12px;
+      max-width: 680px;
+      margin-top: 20px;
+    }
+
+    label {
+      color: var(--navy);
+      font-size: 13px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+
+    .url-row,
+    .export-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input,
+    textarea,
+    select,
+    button {
+      font: inherit;
+    }
+
+    input,
+    textarea,
+    select {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #ffffff;
+      color: var(--ink);
+      box-shadow: 0 8px 22px rgba(15, 35, 66, 0.06);
+    }
+
+    input,
+    textarea {
+      flex: 1 1 320px;
+      min-width: 0;
+      padding: 13px 14px;
+      font-size: 15px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 150px;
+      resize: vertical;
+      font-family: "Cascadia Code", Consolas, monospace;
+      line-height: 1.45;
+    }
+    .site-footer {
+      width: min(1040px, calc(100vw - 32px));
+      margin: 24px auto 34px;
+      padding: 24px 28px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--navy);
+      color: #eef7ff;
+      text-align: center;
+      box-shadow: 0 18px 42px rgba(15, 35, 66, 0.16);
+    }
+
+    .site-footer p {
+      margin: 6px 0;
+    }
+
+    .site-footer .muted {
+      color: #bfdbfe;
+      font-weight: 800;
+    }
+
+    .section-card {
+      max-width: 1040px;
+      width: min(1040px, calc(100vw - 32px));
+      margin: 32px auto;
+      padding: 44px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+
+    .section-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 8px;
+      border-radius: 16px 16px 0 0;
+      background: linear-gradient(90deg, var(--navy), var(--blue), #8cc9ff);
+    }
+
+    .section-card h2 {
+      margin: 0 0 12px;
+      color: var(--navy);
+      font-size: 30px;
+      line-height: 1.1;
+    }
+
+    .section-card h3 {
+      margin: 0 0 8px;
+      color: var(--blue);
+      font-size: 17px;
+    }
+
+    .section-card p,
+    .section-card li {
+      color: #34435a;
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    .section-card ul,
+    .section-card ol {
+      margin: 8px 0 0;
+      padding-left: 22px;
+    }
+
+    .doc-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .info-card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #f8fbff;
+    }
+
+    .documentation-title {
+      margin: 0;
+      color: var(--ink);
+      font-size: 42px;
+      line-height: 1.05;
+    }
+
+    .subtitle {
+      margin: 10px 0 28px;
+      color: var(--blue);
+      font-size: 15px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .documentation-section {
+      margin-top: 30px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+    }
+
+    .documentation-section h2 {
+      margin: 0 0 12px;
+      color: var(--navy);
+      font-size: 22px;
+    }
+
+    .documentation-section h3 {
+      margin: 20px 0 8px;
+      color: #1d4ed8;
+      font-size: 17px;
+    }
+
+    .documentation-section p {
+      margin: 0 0 12px;
+    }
+
+    .documentation-section li {
+      margin: 6px 0;
+    }
+
+    .note {
+      padding: 14px 16px;
+      border-left: 5px solid var(--blue);
+      border-radius: 0 10px 10px 0;
+      background: var(--sky);
+      color: #1f3557;
+      font-weight: 700;
+    }
+
+    code {
+      padding: 2px 5px;
+      border-radius: 6px;
+      background: var(--sky);
+      color: var(--navy);
+      font-family: "Cascadia Code", Consolas, monospace;
+      font-size: 0.92em;
+    }
+
+    pre {
+      overflow-x: auto;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #0f2342;
+      color: #eef7ff;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      color: inherit;
+    }
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .form-field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .form-section {
+      display: grid;
+      gap: 12px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    select {
+      padding: 12px 14px;
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      color: #fff;
+      background: var(--navy);
+      font-size: 14px;
+      font-weight: 850;
+      cursor: pointer;
+      box-shadow: 0 12px 26px rgba(15, 35, 66, 0.2);
+    }
+
+    button.secondary {
+      background: var(--blue);
+    }
+
+    .status {
+      min-height: 20px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .contact-stack {
+      display: grid;
+      justify-items: center;
+    }
+
+    .contact {
+      width: 100%;
+      display: grid;
+      justify-items: center;
+      gap: 12px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #f8fbff;
+      font-style: normal;
+    }
+
+    .qr-code {
+      width: min(320px, 100%);
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #ffffff;
+    }
+
+    .empty-state {
+      padding: 20px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.35;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .qr-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: #ffffff;
+      shape-rendering: crispEdges;
+    }
+
+    .qr-svg rect:not(:first-child) {
+      fill: var(--navy);
+    }
+
+    @media (max-width: 760px) {
+      .app-header,
+      .sheet {
+        width: calc(100vw - 24px);
+        margin: 12px auto;
+        padding: 28px 20px;
+      }
+
+      .top-nav {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .sheet > header {
+        grid-template-columns: 1fr;
+      }
+     
+      .site-footer {
+        width: calc(100vw - 24px);
+      }
+
+      .section-card {
+        width: calc(100vw - 24px);
+        margin: 12px auto;
+        padding: 28px 20px;
+      }
+
+      .doc-grid {
+        grid-template-columns: 1fr;
+      }
+      .field-grid {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 34px;
+      }
+
+      .qr-code {
+        width: min(280px, 100%);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="sheet app-view is-active" id="generator-view" data-view="generator">
+    <header>
+      <div>
+        <h1>QR Code &amp; Contact Card Generator</h1>
+        <div class="headline">Java Script | HTML</div>
+        <p class="profile" id="qrDescription">
+          Generate a self-contained QR code for a URL or a phone-friendly vCard contact.
+        </p>
+
+        <div class="generator-form">
+          <div class="form-field">
+            <label for="qrType">QR type</label>
+            <select id="qrType" aria-label="QR type">
+              <option value="url">URL</option>
+              <option value="vcard">Contact / vCard</option>
+            </select>
+          </div>
+
+          <div class="form-section" id="urlFields">
+            <label for="qrUrlInput">Link to encode</label>
+            <div class="url-row">
+              <input id="qrUrlInput" type="url" value="" placeholder="https://example.com" autocomplete="url">
+              <button class="secondary" type="button" onclick="renderQrFromInput()">Generate QR</button>
+            </div>
+          </div>
+
+          <div class="form-section hidden" id="vcardFields">
+            <div class="field-grid">
+              <div class="form-field">
+                <label for="vcardFullName">Full name</label>
+                <input id="vcardFullName" type="text" autocomplete="name" placeholder="Full name">
+              </div>
+              <div class="form-field">
+                <label for="vcardPhone">Phone number</label>
+                <input id="vcardPhone" type="tel" autocomplete="tel" placeholder="+201022310450">
+              </div>
+              <div class="form-field">
+                <label for="vcardEmail">Email</label>
+                <input id="vcardEmail" type="email" autocomplete="email" placeholder="name@example.com">
+              </div>
+              <div class="form-field">
+                <label for="vcardTitle">Title</label>
+                <input id="vcardTitle" type="text" autocomplete="organization-title" placeholder="Data Science Student">
+              </div>
+              <div class="form-field">
+                <label for="vcardOrg">Organization</label>
+                <input id="vcardOrg" type="text" autocomplete="organization" placeholder="Organization">
+              </div>
+              <div class="form-field">
+                <label for="vcardWebsite">Website URL optional</label>
+                <input id="vcardWebsite" type="url" autocomplete="url" placeholder="https://example.com">
+              </div>
+            </div>
+            <button class="secondary" type="button" onclick="renderQrFromInput()">Generate QR</button>
+          </div>
+
+          <div class="form-field">
+            <label for="payloadPreview">Payload preview</label>
+            <textarea id="payloadPreview" readonly placeholder="The encoded QR payload will appear here."></textarea>
+          </div>
+
+          <div class="export-row">
+            <select id="qrExportFormat" aria-label="QR export format">
+              <option value="svg">SVG</option>
+              <option value="png">PNG</option>
+            </select>
+            <button type="button" onclick="exportQrCode()">Export QR</button>
+            <button class="secondary" type="button" data-view-target="about">About</button>
+          </div>
+
+          <div class="status" id="qrStatus"></div>
+        </div>
+
+      </div>
+
+      <div class="contact-stack">
+        <address class="contact">
+          <div class="qr-code" id="resumeQr" data-url="">
+            <div class="empty-state">Enter a link to generate a QR code</div>
+          </div>
+        </address>
+      </div>
+    </header>
+	
+	</main>
+  <section class="section-card app-view" id="about-view" data-view="about">
+    <h1 class="documentation-title">QR Code &amp; Contact Card Generator</h1>
+    <div class="subtitle">Technical documentation for the handwritten JavaScript encoder</div>
+
+    <section class="documentation-section">
+      <h2>Overview</h2>
+      <p>
+        The generator in <code>QRCodeGenerator.html</code> creates QR codes entirely in the browser. It does not call an external QR service and does not depend on QRCode.js or any third-party library. The encoder builds a QR matrix in JavaScript, then renders the result as SVG.
+      </p>
+      <p>
+        The tool supports two payload types: normal URL text and vCard contact data. The same QR encoder is used for both; only the payload-building step changes.
+      </p>
+      <div class="note">
+        Design goal: keep the implementation self-contained, readable, inspectable, and exportable as SVG or PNG.
+      </div>
+    </section>
+
+    <section class="documentation-section">
+      <h2>Theoretical Background</h2>
+      <h3>What a QR Code Contains</h3>
+      <p>
+        A QR code is a square matrix of dark and light modules. Some modules are structural patterns that help scanners locate and interpret the code; the rest store encoded data and Reed-Solomon error correction bytes.
+      </p>
+      <ul>
+        <li><strong>Finder patterns:</strong> the large square markers in three corners.</li>
+        <li><strong>Timing patterns:</strong> alternating modules used to determine grid spacing.</li>
+        <li><strong>Alignment patterns:</strong> smaller markers used in larger versions to correct distortion.</li>
+        <li><strong>Format information:</strong> error correction level and mask pattern.</li>
+        <li><strong>Version information:</strong> required for QR versions 7 and above.</li>
+        <li><strong>Data and ECC modules:</strong> the encoded payload and error correction bytes.</li>
+      </ul>
+
+      <h3>Versions and Capacity</h3>
+      <p>
+        QR versions control matrix size. Version 1 is 21 by 21 modules. Each higher version adds four modules per side. This implementation supports versions 1 through 10 at error correction level L.
+      </p>
+      <p>
+        URLs usually fit in smaller versions. vCards are longer because they include multiple structured lines, so the encoder may choose a larger version such as Version 8.
+      </p>
+
+      <h3>Error Correction</h3>
+      <p>
+        QR codes use Reed-Solomon error correction over GF(256). This lets scanners recover the payload even if part of the QR code is damaged, blurred, or visually imperfect.
+      </p>
+    </section>
+
+    <section class="documentation-section">
+      <h2>Implementation Pipeline</h2>
+      <ol>
+        <li><strong>Build payload:</strong> read the selected form mode and produce either a URL string or a vCard string.</li>
+        <li><strong>Select QR version:</strong> choose the smallest supported version that can hold the UTF-8 byte payload.</li>
+        <li><strong>Encode byte mode:</strong> write the QR byte-mode indicator, payload length, UTF-8 bytes, terminator, and pad bytes.</li>
+        <li><strong>Create data blocks:</strong> split data into QR-standard blocks for larger versions.</li>
+        <li><strong>Generate ECC:</strong> calculate Reed-Solomon bytes for each block.</li>
+        <li><strong>Interleave codewords:</strong> interleave data and ECC bytes in the order expected by scanners.</li>
+        <li><strong>Draw function patterns:</strong> place finder, timing, alignment, dark module, format reservations, and version reservations.</li>
+        <li><strong>Place data bits:</strong> write the bitstream in the QR zigzag pattern from bottom-right upward.</li>
+        <li><strong>Apply masks:</strong> try all eight QR masks.</li>
+        <li><strong>Score masks:</strong> choose the mask with the lowest QR penalty score.</li>
+        <li><strong>Render SVG:</strong> convert dark modules into SVG rectangles with a quiet zone.</li>
+      </ol>
+    </section>
+
+    <section class="documentation-section">
+      <h2>vCard Payload</h2>
+      <p>
+        When Contact / vCard mode is selected, the script builds a valid vCard 3.0 payload. Most mobile QR scanners recognize this format and offer to save it as a contact.
+      </p>
+      <pre><code>BEGIN:VCARD
+VERSION:3.0
+N:Ahmed;Dina;;;
+FN:Dina Ahmed
+TEL;TYPE=CELL:+201022310450
+EMAIL:dinaahmedhafez655@gmail.com
+TITLE:Data Science Student
+ORG:Alexandria University
+END:VCARD</code></pre>
+      <p>
+        The implementation uses CRLF line endings (<code>\r\n</code>) because vCard parsers expect that convention. Special characters such as commas, semicolons, backslashes, and line breaks are escaped before encoding.
+      </p>
+    </section>
+
+    <section class="documentation-section">
+      <h2>Key Functions</h2>
+      <ul>
+        <li><code>buildVCardPayload()</code>: validates contact fields and creates the vCard text.</li>
+        <li><code>getCurrentQrText()</code>: chooses URL or vCard payload based on the selector.</li>
+        <li><code>encodeByteData(text, version)</code>: converts payload text into QR byte-mode data codewords.</li>
+        <li><code>reedSolomonRemainder(data, eccLength)</code>: generates ECC bytes for one block.</li>
+        <li><code>makeDataBlocks()</code> and <code>interleaveBlocks()</code>: prepare larger QR versions correctly.</li>
+        <li><code>buildFunctionPatterns(version)</code>: draws and reserves all fixed QR structures.</li>
+        <li><code>drawData(matrix, dataBits, mask)</code>: places payload bits in QR zigzag order.</li>
+        <li><code>penaltyScore(modules)</code>: scores each mask candidate.</li>
+        <li><code>buildQrSvg(text)</code>: creates the final SVG element.</li>
+        <li><code>exportQrSvg()</code> and <code>exportQrPng()</code>: download the current QR output.</li>
+      </ul>
+    </section>
+
+    <section class="documentation-section">
+      <h2>Implementation Choices</h2>
+      <h3>Why SVG?</h3>
+      <p>
+        SVG is sharp at any size, easy to export, and ideal for QR codes because each module can be drawn as a precise rectangle. The file also uses <code>shape-rendering: crispEdges</code> to avoid blurry module edges.
+      </p>
+
+      <h3>Why Byte Mode?</h3>
+      <p>
+        URLs and vCards contain punctuation, symbols, and sometimes non-ASCII characters. Byte mode with UTF-8 is the simplest reliable encoding choice for those payloads.
+      </p>
+
+      <h3>Why Error Correction Level L?</h3>
+      <p>
+        Level L gives the most data capacity. This matters for vCards, which can be long. For a plain black-and-white QR code with no logo overlay, Level L is usually acceptable.
+      </p>
+
+      <h3>Why Support Version 10?</h3>
+      <p>
+        Small URL QR codes fit in early versions, but contact cards may require larger matrices. Version 10 gives enough room for realistic vCard payloads while keeping the handwritten implementation manageable.
+      </p>
+    </section>
+
+    <section class="documentation-section">
+      <h2>Validation and Debugging</h2>
+      <p>
+        The script includes internal self-tests for format bits, GF(256) multiplication, and known small matrices. It also exposes debugging helpers in the browser console.
+      </p>
+      <pre><code>window.exportQrMatrixText()
+window.exportQrMatrixSignature()</code></pre>
+      <p>
+        If a QR code does not scan, the first things to inspect are payload length, QR version, alignment pattern placement, version information bits, and whether the rendered SVG is visually crisp.
+      </p>
+    </section>
+
+    <section class="documentation-section">
+      <h2>Limitations</h2>
+      <ul>
+        <li>The encoder supports QR versions 1-10 only.</li>
+        <li>It uses byte mode only.</li>
+        <li>It uses error correction level L only.</li>
+        <li>Very long vCards may exceed the supported capacity.</li>
+        <li>No logo embedding or styling overlays are applied, which helps preserve scannability.</li>
+      </ul>
+    </section>
+  </section>
+
+  <footer class="site-footer">
+    <p>© 2026 Walid Dyab. This page is built in collaboration with OpenAI-Codex and OpenAI-GPT.</p>
+    <p class="muted">Self-contained QR generator | No external QR API</p>
+  </footer>
+  
+
+  <script>
+    /*
+      QR Code & Contact Card Generator
+      --------------------------------
+      This file is intentionally self-contained: no QR libraries, no external
+      APIs, and no online QR services. The JavaScript below implements a small
+      handwritten QR encoder that renders directly to SVG.
+
+      Supported payload types:
+      - URL: the raw URL string from the URL input.
+      - Contact / vCard: a VERSION:3.0 vCard payload assembled from the form.
+
+      QR implementation scope:
+      - Byte mode only, which is appropriate for URLs and vCard text.
+      - Error correction level L.
+      - QR Versions 1-10, including block interleaving for larger payloads.
+      - Automatic mask selection using QR penalty scoring.
+      - SVG rendering with a quiet zone for scanner compatibility.
+    */
+
+    // Default is intentionally empty so the user must choose the encoded data.
+    const RESUME_QR_URL = "";
+
+    // Set this to false if console logging becomes too noisy during normal use.
+    const QR_DEBUG = true;
+
+    // Known small URL used by the built-in self-tests.
+    const QR_TEST_PAYLOAD = "https://example.com";
+
+    // Version 1-10, error correction L, byte mode. Higher versions are needed
+    // for vCard/contact payloads, so this table includes QR block structures.
+    const QR_VERSIONS = {
+      1: { dataCodewords: 19, eccCodewords: 7, alignment: [], blocks: [{ count: 1, dataCodewords: 19 }] },
+      2: { dataCodewords: 34, eccCodewords: 10, alignment: [6, 18], blocks: [{ count: 1, dataCodewords: 34 }] },
+      3: { dataCodewords: 55, eccCodewords: 15, alignment: [6, 22], blocks: [{ count: 1, dataCodewords: 55 }] },
+      4: { dataCodewords: 80, eccCodewords: 20, alignment: [6, 26], blocks: [{ count: 1, dataCodewords: 80 }] },
+      5: { dataCodewords: 108, eccCodewords: 26, alignment: [6, 30], blocks: [{ count: 1, dataCodewords: 108 }] },
+      6: { dataCodewords: 136, eccCodewords: 18, alignment: [6, 34], blocks: [{ count: 2, dataCodewords: 68 }] },
+      7: { dataCodewords: 156, eccCodewords: 20, alignment: [6, 22, 38], blocks: [{ count: 2, dataCodewords: 78 }] },
+      8: { dataCodewords: 194, eccCodewords: 24, alignment: [6, 24, 42], blocks: [{ count: 2, dataCodewords: 97 }] },
+      9: { dataCodewords: 232, eccCodewords: 30, alignment: [6, 26, 46], blocks: [{ count: 2, dataCodewords: 116 }] },
+      10: { dataCodewords: 274, eccCodewords: 18, alignment: [6, 28, 50], blocks: [{ count: 2, dataCodewords: 68 }, { count: 2, dataCodewords: 69 }] },
+    };
+
+    function appendBits(bits, value, length) {
+      for (let i = length - 1; i >= 0; i -= 1) bits.push((value >>> i) & 1);
+    }
+
+    function bitsToBytes(bits) {
+      const bytes = [];
+      for (let i = 0; i < bits.length; i += 8) {
+        bytes.push(bits.slice(i, i + 8).reduce((sum, bit) => (sum << 1) | bit, 0));
+      }
+      return bytes;
+    }
+
+    function byteToHex(byte) {
+      return byte.toString(16).padStart(2, "0").toUpperCase();
+    }
+
+    function chooseVersion(byteLength) {
+      for (const version of Object.keys(QR_VERSIONS).map(Number)) {
+        if (byteLength <= QR_VERSIONS[version].dataCodewords - 2) return version;
+      }
+      throw new Error("Payload too long for this handwritten QR encoder. Try a shorter URL.");
+    }
+
+    // Encodes text as QR byte mode: mode indicator, 8-bit length, UTF-8 bytes,
+    // terminator, byte alignment, and alternating pad bytes.
+    // Stage 1: byte-mode data encoding. Versions 1-9 use an 8-bit byte count.
+    function encodeByteData(text, version) {
+      const bytes = Array.from(new TextEncoder().encode(text));
+      const { dataCodewords } = QR_VERSIONS[version];
+      const bits = [];
+      appendBits(bits, 0b0100, 4);
+      appendBits(bits, bytes.length, 8);
+      bytes.forEach((byte) => appendBits(bits, byte, 8));
+      appendBits(bits, 0, Math.min(4, dataCodewords * 8 - bits.length));
+      while (bits.length % 8) bits.push(0);
+
+      const data = bitsToBytes(bits);
+      for (let pad = 0; data.length < dataCodewords; pad ^= 1) {
+        data.push(pad ? 0x11 : 0xEC);
+      }
+
+      return { payloadBytes: bytes, encodedBits: bits, dataCodewords: data };
+    }
+
+    // Builds GF(256) lookup tables used by Reed-Solomon arithmetic.
+    // Stage 2: Reed-Solomon ECC over GF(256), primitive polynomial 0x11D.
+    function createGaloisTables() {
+      const exp = Array(512);
+      const log = Array(256);
+      let value = 1;
+      for (let i = 0; i < 255; i += 1) {
+        exp[i] = value;
+        log[value] = i;
+        value <<= 1;
+        if (value & 0x100) value ^= 0x11D;
+      }
+      for (let i = 255; i < 512; i += 1) exp[i] = exp[i - 255];
+      return { exp, log };
+    }
+
+    const GF = createGaloisTables();
+    const gfMultiply = (a, b) => (a === 0 || b === 0 ? 0 : GF.exp[GF.log[a] + GF.log[b]]);
+
+    // Creates the Reed-Solomon generator polynomial for the requested ECC size.
+    function reedSolomonGenerator(degree) {
+      const generator = Array(degree).fill(0);
+      generator[degree - 1] = 1;
+      let root = 1;
+      for (let i = 0; i < degree; i += 1) {
+        for (let j = 0; j < degree; j += 1) {
+          generator[j] = gfMultiply(generator[j], root);
+          if (j + 1 < degree) generator[j] ^= generator[j + 1];
+        }
+        root = gfMultiply(root, 0x02);
+      }
+      return generator;
+    }
+
+    // Calculates the ECC bytes for one data block.
+    function reedSolomonRemainder(data, eccLength) {
+      const generator = reedSolomonGenerator(eccLength);
+      const remainder = Array(eccLength).fill(0);
+      data.forEach((byte) => {
+        const factor = byte ^ remainder.shift();
+        remainder.push(0);
+        generator.forEach((coefficient, index) => {
+          remainder[index] ^= gfMultiply(coefficient, factor);
+        });
+      });
+      return { generator, ecc: remainder };
+    }
+
+    // Splits data codewords into QR-standard blocks for the selected version.
+    function makeDataBlocks(dataCodewords, versionInfo) {
+      const blocks = [];
+      let offset = 0;
+      versionInfo.blocks.forEach((group) => {
+        for (let i = 0; i < group.count; i += 1) {
+          const data = dataCodewords.slice(offset, offset + group.dataCodewords);
+          offset += group.dataCodewords;
+          blocks.push({
+            data,
+            ecc: reedSolomonRemainder(data, versionInfo.eccCodewords).ecc,
+          });
+        }
+      });
+      return blocks;
+    }
+
+    // Interleaves data bytes and ECC bytes exactly as QR readers expect.
+    function interleaveBlocks(blocks) {
+      const result = [];
+      const maxDataLength = Math.max(...blocks.map((block) => block.data.length));
+      for (let i = 0; i < maxDataLength; i += 1) {
+        blocks.forEach((block) => {
+          if (i < block.data.length) result.push(block.data[i]);
+        });
+      }
+
+      const maxEccLength = Math.max(...blocks.map((block) => block.ecc.length));
+      for (let i = 0; i < maxEccLength; i += 1) {
+        blocks.forEach((block) => {
+          if (i < block.ecc.length) result.push(block.ecc[i]);
+        });
+      }
+      return result;
+    }
+
+    function makeMatrix(size) {
+      return {
+        modules: Array.from({ length: size }, () => Array(size).fill(false)),
+        reserved: Array.from({ length: size }, () => Array(size).fill(false)),
+      };
+    }
+
+    function cloneMatrix(source) {
+      return {
+        modules: source.modules.map((row) => row.slice()),
+        reserved: source.reserved.map((row) => row.slice()),
+      };
+    }
+
+    function setModule(matrix, x, y, value = true, reserve = true) {
+      const size = matrix.modules.length;
+      if (x < 0 || y < 0 || x >= size || y >= size) return;
+      matrix.modules[y][x] = value;
+      if (reserve) matrix.reserved[y][x] = true;
+    }
+
+    // Draws a 7x7 finder marker plus its white separator.
+    // Stage 3: fixed finder, separator, timing, alignment, dark-module, and
+    // format reservation patterns.
+    function addFinder(matrix, x, y) {
+      const size = matrix.modules.length;
+      for (let dy = -1; dy <= 7; dy += 1) {
+        for (let dx = -1; dx <= 7; dx += 1) {
+          const xx = x + dx;
+          const yy = y + dy;
+          if (xx < 0 || yy < 0 || xx >= size || yy >= size) continue;
+          const inFinder = dx >= 0 && dx <= 6 && dy >= 0 && dy <= 6;
+          const on = inFinder && (dx === 0 || dx === 6 || dy === 0 || dy === 6 || (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4));
+          setModule(matrix, xx, yy, on, true);
+        }
+      }
+    }
+
+    function addAlignment(matrix, centerX, centerY) {
+      for (let dy = -2; dy <= 2; dy += 1) {
+        for (let dx = -2; dx <= 2; dx += 1) {
+          setModule(matrix, centerX + dx, centerY + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1, true);
+        }
+      }
+    }
+
+    // Places all non-data QR structures and reserves their cells so data bits
+    // cannot overwrite them later.
+    function buildFunctionPatterns(version) {
+      const size = 21 + 4 * (version - 1);
+      const matrix = makeMatrix(size);
+
+      addFinder(matrix, 0, 0);
+      addFinder(matrix, size - 7, 0);
+      addFinder(matrix, 0, size - 7);
+
+      for (let i = 0; i < size; i += 1) {
+        if (!matrix.reserved[6][i]) setModule(matrix, i, 6, i % 2 === 0, true);
+        if (!matrix.reserved[i][6]) setModule(matrix, 6, i, i % 2 === 0, true);
+      }
+
+      const alignmentPositions = QR_VERSIONS[version].alignment;
+      const lastAlignment = alignmentPositions[alignmentPositions.length - 1];
+      alignmentPositions.forEach((x) => {
+        alignmentPositions.forEach((y) => {
+          const overlapsTopLeftFinder = x === 6 && y === 6;
+          const overlapsTopRightFinder = x === lastAlignment && y === 6;
+          const overlapsBottomLeftFinder = x === 6 && y === lastAlignment;
+          if (overlapsTopLeftFinder || overlapsTopRightFinder || overlapsBottomLeftFinder) return;
+          addAlignment(matrix, x, y);
+        });
+      });
+
+      setModule(matrix, 8, 4 * version + 9, true, true);
+
+      for (let i = 0; i < 9; i += 1) {
+        if (i !== 6) {
+          matrix.reserved[8][i] = true;
+          matrix.reserved[i][8] = true;
+        }
+      }
+      for (let i = 0; i < 8; i += 1) {
+        matrix.reserved[8][size - 1 - i] = true;
+        matrix.reserved[size - 1 - i][8] = true;
+      }
+
+      if (version >= 7) {
+        for (let i = 0; i < 18; i += 1) {
+          matrix.reserved[Math.floor(i / 3)][size - 11 + (i % 3)] = true;
+          matrix.reserved[size - 11 + (i % 3)][Math.floor(i / 3)] = true;
+        }
+      }
+
+      return matrix;
+    }
+
+    // The eight standard QR mask formulas.
+    function maskBit(mask, x, y) {
+      switch (mask) {
+        case 0: return (x + y) % 2 === 0;
+        case 1: return y % 2 === 0;
+        case 2: return x % 3 === 0;
+        case 3: return (x + y) % 3 === 0;
+        case 4: return (Math.floor(y / 2) + Math.floor(x / 3)) % 2 === 0;
+        case 5: return ((x * y) % 2 + (x * y) % 3) === 0;
+        case 6: return (((x * y) % 2 + (x * y) % 3) % 2) === 0;
+        case 7: return (((x + y) % 2 + (x * y) % 3) % 2) === 0;
+        default: throw new Error("Invalid mask pattern.");
+      }
+    }
+
+    // Places interleaved data/ECC bits in the standard two-column zigzag path.
+    // Stage 4: data placement in the standard upward/downward two-column path.
+    function drawData(matrix, dataBits, mask) {
+      const size = matrix.modules.length;
+      let index = 0;
+      let upward = true;
+      for (let right = size - 1; right >= 1; right -= 2) {
+        if (right === 6) right -= 1;
+        for (let vertical = 0; vertical < size; vertical += 1) {
+          const y = upward ? size - 1 - vertical : vertical;
+          for (let dx = 0; dx < 2; dx += 1) {
+            const x = right - dx;
+            if (matrix.reserved[y][x]) continue;
+            let bit = index < dataBits.length ? dataBits[index] === 1 : false;
+            index += 1;
+            if (maskBit(mask, x, y)) bit = !bit;
+            matrix.modules[y][x] = bit;
+          }
+        }
+        upward = !upward;
+      }
+    }
+
+    // Generates BCH-protected format bits: error correction level + mask id.
+    // Stage 5: BCH format information. Error correction L has format field 01.
+    function formatBits(mask) {
+      const errorCorrectionL = 0b01;
+      const data = (errorCorrectionL << 3) | mask;
+      let remainder = data;
+      for (let i = 0; i < 10; i += 1) {
+        remainder = (remainder << 1) ^ (((remainder >>> 9) & 1) * 0x537);
+      }
+      return ((data << 10) | remainder) ^ 0x5412;
+    }
+
+    function drawFormatBits(matrix, mask) {
+      const size = matrix.modules.length;
+      const bits = formatBits(mask);
+      const bit = (i) => ((bits >>> i) & 1) === 1;
+
+      for (let i = 0; i <= 5; i += 1) setModule(matrix, 8, i, bit(i), true);
+      setModule(matrix, 8, 7, bit(6), true);
+      setModule(matrix, 8, 8, bit(7), true);
+      setModule(matrix, 7, 8, bit(8), true);
+      for (let i = 9; i < 15; i += 1) setModule(matrix, 14 - i, 8, bit(i), true);
+      for (let i = 0; i < 8; i += 1) setModule(matrix, size - 1 - i, 8, bit(i), true);
+      for (let i = 8; i < 15; i += 1) setModule(matrix, 8, size - 15 + i, bit(i), true);
+    }
+
+    // Version 7+ QR codes need extra BCH-protected version information.
+    function versionBits(version) {
+      let remainder = version;
+      for (let i = 0; i < 12; i += 1) {
+        remainder = (remainder << 1) ^ (((remainder >>> 11) & 1) * 0x1F25);
+      }
+      return (version << 12) | remainder;
+    }
+
+    function drawVersionBits(matrix, version) {
+      if (version < 7) return;
+      const size = matrix.modules.length;
+      const bits = versionBits(version);
+      for (let i = 0; i < 18; i += 1) {
+        const bit = ((bits >>> i) & 1) === 1;
+        const x = size - 11 + (i % 3);
+        const y = Math.floor(i / 3);
+        setModule(matrix, x, y, bit, true);
+        setModule(matrix, y, x, bit, true);
+      }
+    }
+
+    // Scores QR readability using the standard penalty rules; the lowest score
+    // mask is selected.
+    // Stage 6: QR mask penalty scoring, used to choose a scannable-looking mask.
+    function penaltyScore(modules) {
+      const size = modules.length;
+      let penalty = 0;
+      const get = (x, y) => modules[y][x];
+
+      for (let y = 0; y < size; y += 1) {
+        let runColor = get(0, y);
+        let runLength = 1;
+        for (let x = 1; x < size; x += 1) {
+          if (get(x, y) === runColor) runLength += 1;
+          else {
+            if (runLength >= 5) penalty += 3 + runLength - 5;
+            runColor = get(x, y);
+            runLength = 1;
+          }
+        }
+        if (runLength >= 5) penalty += 3 + runLength - 5;
+      }
+
+      for (let x = 0; x < size; x += 1) {
+        let runColor = get(x, 0);
+        let runLength = 1;
+        for (let y = 1; y < size; y += 1) {
+          if (get(x, y) === runColor) runLength += 1;
+          else {
+            if (runLength >= 5) penalty += 3 + runLength - 5;
+            runColor = get(x, y);
+            runLength = 1;
+          }
+        }
+        if (runLength >= 5) penalty += 3 + runLength - 5;
+      }
+
+      for (let y = 0; y < size - 1; y += 1) {
+        for (let x = 0; x < size - 1; x += 1) {
+          const color = get(x, y);
+          if (color === get(x + 1, y) && color === get(x, y + 1) && color === get(x + 1, y + 1)) penalty += 3;
+        }
+      }
+
+      const pattern = [true, false, true, true, true, false, true, false, false, false, false];
+      const reverse = pattern.slice().reverse();
+      for (let y = 0; y < size; y += 1) {
+        for (let x = 0; x <= size - 11; x += 1) {
+          const run = pattern.every((value, index) => get(x + index, y) === value);
+          const rev = reverse.every((value, index) => get(x + index, y) === value);
+          if (run || rev) penalty += 40;
+        }
+      }
+      for (let x = 0; x < size; x += 1) {
+        for (let y = 0; y <= size - 11; y += 1) {
+          const run = pattern.every((value, index) => get(x, y + index) === value);
+          const rev = reverse.every((value, index) => get(x, y + index) === value);
+          if (run || rev) penalty += 40;
+        }
+      }
+
+      const dark = modules.flat().filter(Boolean).length;
+      penalty += Math.floor(Math.abs(dark * 20 - size * size * 10) / (size * size)) * 10;
+      return penalty;
+    }
+
+    function matrixToText(modules) {
+      return modules.map((row) => row.map((cell) => (cell ? "â–ˆâ–ˆ" : "  ")).join("")).join("\n");
+    }
+
+    function matrixSignature(modules) {
+      return modules.map((row) => row.map((cell) => (cell ? "1" : "0")).join("")).join("/");
+    }
+
+    function matrixRowHex(modules) {
+      return modules.map((row) => parseInt(row.map((cell) => (cell ? "1" : "0")).join(""), 2).toString(16).toUpperCase().padStart(Math.ceil(row.length / 4), "0"));
+    }
+
+    // Full encoder pipeline: choose version, encode data, generate ECC, build
+    // the matrix for all masks, score them, and return the best final matrix.
+    function encodeMatrix(text) {
+      const payloadBytes = Array.from(new TextEncoder().encode(text));
+      const version = chooseVersion(payloadBytes.length);
+      const versionInfo = QR_VERSIONS[version];
+      const { dataCodewords, eccCodewords } = versionInfo;
+      const data = encodeByteData(text, version);
+      const blocks = makeDataBlocks(data.dataCodewords, versionInfo);
+      const finalCodewords = interleaveBlocks(blocks);
+      const allBits = [];
+      finalCodewords.forEach((byte) => appendBits(allBits, byte, 8));
+
+      const base = buildFunctionPatterns(version);
+      let best = null;
+      for (let mask = 0; mask < 8; mask += 1) {
+        const candidate = cloneMatrix(base);
+        drawData(candidate, allBits, mask);
+        drawFormatBits(candidate, mask);
+        drawVersionBits(candidate, version);
+        const penalty = penaltyScore(candidate.modules);
+        if (!best || penalty < best.penalty) best = { ...candidate, mask, penalty };
+      }
+
+      if (QR_DEBUG) {
+        console.group(`QR debug: ${text}`);
+        console.log("QR version:", version);
+        console.log("Payload length:", payloadBytes.length);
+        console.log("Payload bytes:", payloadBytes.map(byteToHex).join(" "));
+        console.log("Encoded bitstream:", data.encodedBits.join(""));
+        console.log("Data codewords:", data.dataCodewords.map(byteToHex).join(" "));
+        console.log("Generated ECC bytes:", blocks.map((block) => block.ecc.map(byteToHex).join(" ")));
+        console.log("Selected mask:", best.mask, "penalty:", best.penalty);
+        console.log("Final format bits:", formatBits(best.mask).toString(2).padStart(15, "0"));
+        console.log("Matrix text:\n" + matrixToText(best.modules));
+        console.log("Matrix signature:", matrixSignature(best.modules));
+        console.groupEnd();
+      }
+
+      return {
+        modules: best.modules,
+        version,
+        payloadLength: payloadBytes.length,
+        dataCodewords,
+        eccCodewords,
+        ecc: blocks.flatMap((block) => block.ecc),
+        mask: best.mask,
+        format: formatBits(best.mask),
+        matrixText: matrixToText(best.modules),
+        matrixSignature: matrixSignature(best.modules),
+        matrixRowHex: matrixRowHex(best.modules),
+      };
+    }
+
+    // Developer self-tests for QR math and matrix stability.
+    // Validation helper for manual debugging. The fixed expected format word is
+    // the QR-standard Version 1/2/3-L mask-0 format pattern: 111011111000100.
+    function runQrSelfTests() {
+      const expectedFormatMask0 = 0b111011111000100;
+      const referenceMatrices = {
+        HELLO: ["1FD77F", "104641", "175A5D", "17595D", "17525D", "104F41", "1FD57F", "000300", "1E5F9D", "1AB3CC", "05C203", "1A9A7A", "13D125", "001245", "1FC320", "104C3E", "1745FB", "175A5E", "175164", "1050B1", "1FD8A0"],
+        [QR_TEST_PAYLOAD]: ["1FD347F", "104C141", "1745D5D", "174195D", "174AD5D", "1045541", "1FD557F", "0016B00", "1B4E941", "1139FBE", "12C6BB9", "0D0F8EF", "1CFBB61", "1400F12", "1AC3B5F", "17220ED", "15645F6", "0017D16", "1FC2151", "104D712", "1759FF1", "17545C3", "174969F", "105C637", "1FD4D49"],
+      };
+      console.assert(formatBits(0) === expectedFormatMask0, "Format bits for EC-L/mask-0 are incorrect.");
+      console.assert(gfMultiply(0x53, 0xCA) === 0x8F, "GF(256) multiplication sanity check failed.");
+
+      const examples = [
+        { label: "Version-1 byte-mode sanity", payload: "HELLO", expectedVersion: 1 },
+        { label: "Version-2 hardcoded URL test", payload: QR_TEST_PAYLOAD, expectedVersion: 2 },
+      ];
+
+      examples.forEach((example) => {
+        const result = encodeMatrix(example.payload);
+        console.assert(result.version === example.expectedVersion, `${example.label}: unexpected version`);
+        console.assert(result.matrixRowHex.join("|") === referenceMatrices[example.payload].join("|"), `${example.label}: matrix differs from checked reference`);
+        console.log(`${example.label} matrix:\n${result.matrixText}`);
+      });
+    }
+
+    // Converts the final matrix into SVG rectangles. This is the only rendering
+    // layer; the encoder itself is independent from page layout.
+    function buildQrSvg(text) {
+      const result = encodeMatrix(text);
+      const quietZone = 4;
+      const size = result.modules.length;
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("class", "qr-svg");
+      svg.setAttribute("viewBox", `0 0 ${size + quietZone * 2} ${size + quietZone * 2}`);
+      svg.setAttribute("role", "img");
+      svg.setAttribute("aria-label", "QR code linking to the online resume");
+      svg.dataset.version = result.version;
+      svg.dataset.mask = result.mask;
+
+      const background = document.createElementNS(svg.namespaceURI, "rect");
+      background.setAttribute("width", "100%");
+      background.setAttribute("height", "100%");
+      background.setAttribute("fill", "#ffffff");
+      svg.appendChild(background);
+
+      result.modules.forEach((row, y) => {
+        row.forEach((isDark, x) => {
+          if (!isDark) return;
+          const rect = document.createElementNS(svg.namespaceURI, "rect");
+          rect.setAttribute("x", x + quietZone);
+          rect.setAttribute("y", y + quietZone);
+          rect.setAttribute("width", "1");
+          rect.setAttribute("height", "1");
+          svg.appendChild(rect);
+        });
+      });
+
+      return svg;
+    }
+
+    // Reads a form value safely.
+    function getValue(id) {
+      return (document.getElementById(id)?.value || "").trim();
+    }
+
+    // Escapes vCard special characters according to the vCard text format.
+    function escapeVCardValue(value) {
+      return value
+        .replace(/\\/g, "\\\\")
+        .replace(/\n/g, "\\n")
+        .replace(/,/g, "\\,")
+        .replace(/;/g, "\\;");
+    }
+
+    // Builds the contact-card payload. Required fields are validated here before
+    // anything is sent to the QR encoder.
+    function buildVCardPayload() {
+      const fullName = getValue("vcardFullName");
+      const phone = getValue("vcardPhone");
+      const email = getValue("vcardEmail");
+      const title = getValue("vcardTitle");
+      const org = getValue("vcardOrg");
+      const website = getValue("vcardWebsite");
+
+      const missing = [];
+      if (!fullName) missing.push("Full name");
+      if (!phone) missing.push("Phone number");
+      if (!email) missing.push("Email");
+      if (!title) missing.push("Title");
+      if (!org) missing.push("Organization");
+      if (missing.length) throw new Error(`Please fill required contact fields: ${missing.join(", ")}.`);
+
+      const nameParts = fullName.split(/\s+/).filter(Boolean);
+      const familyName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : "";
+      const givenName = nameParts.length > 1 ? nameParts.slice(0, -1).join(" ") : fullName;
+      const lines = [
+        "BEGIN:VCARD",
+        "VERSION:3.0",
+        `N:${escapeVCardValue(familyName)};${escapeVCardValue(givenName)};;;`,
+        `FN:${escapeVCardValue(fullName)}`,
+        `TEL;TYPE=CELL:${escapeVCardValue(phone)}`,
+        `EMAIL:${escapeVCardValue(email)}`,
+        `TITLE:${escapeVCardValue(title)}`,
+        `ORG:${escapeVCardValue(org)}`,
+      ];
+      if (website) lines.push(`URL:${escapeVCardValue(website)}`);
+      lines.push("END:VCARD");
+      return lines.join("\r\n");
+    }
+
+    // Chooses the payload based on the selected QR type.
+    function getCurrentQrText() {
+      const type = document.getElementById("qrType")?.value || "url";
+      if (type === "vcard") return buildVCardPayload();
+      const url = getValue("qrUrlInput");
+      if (!url) throw new Error("Please enter a link first.");
+      return url;
+    }
+
+    function updatePayloadPreview(payload = "") {
+      const preview = document.getElementById("payloadPreview");
+      if (preview) preview.value = payload;
+    }
+
+    // Swaps URL/vCard controls and resets the preview state.
+    function updateQrTypeUi() {
+      const type = document.getElementById("qrType")?.value || "url";
+      document.getElementById("urlFields")?.classList.toggle("hidden", type !== "url");
+      document.getElementById("vcardFields")?.classList.toggle("hidden", type !== "vcard");
+      updatePayloadPreview("");
+      showEmptyQrState(type === "vcard" ? "Fill the contact fields to generate a vCard QR code" : "Enter a link to generate a QR code");
+      const description = document.getElementById("qrDescription");
+      if (description) {
+        description.textContent = type === "vcard"
+          ? "Generate a phone-friendly vCard QR code that can be saved as a contact."
+          : "Generate a self-contained QR code for a URL.";
+      }
+    }
+
+    function setStatus(message, isError = false) {
+      const status = document.getElementById("qrStatus");
+      if (!status) return;
+      status.textContent = message;
+      status.style.color = isError ? "#b42318" : "";
+    }
+
+    function showAppView(viewName) {
+      const generatorView = document.getElementById("generator-view");
+      const aboutView = document.getElementById("about-view");
+      const generatorButton = document.querySelector('[data-view-target="generator"]');
+      const aboutButton = document.querySelector('[data-view-target="about"]');
+
+      if (viewName === "about") {
+        if (!aboutView) return;
+        const isOpen = aboutView.classList.contains("is-active");
+        aboutView.classList.toggle("is-active", !isOpen);
+        aboutView.classList.toggle("is-leaving", isOpen);
+        aboutButton?.classList.toggle("is-active", !isOpen);
+        generatorButton?.classList.toggle("is-active", isOpen);
+
+        if (isOpen) {
+          window.setTimeout(() => aboutView.classList.remove("is-leaving"), 180);
+        } else {
+          window.setTimeout(() => aboutView.scrollIntoView({ behavior: "smooth", block: "start" }), 90);
+        }
+        return;
+      }
+
+      generatorView?.classList.add("is-active");
+      if (aboutView?.classList.contains("is-active")) {
+        aboutView.classList.remove("is-active");
+        aboutView.classList.add("is-leaving");
+        window.setTimeout(() => aboutView.classList.remove("is-leaving"), 180);
+      }
+      generatorButton?.classList.add("is-active");
+      aboutButton?.classList.remove("is-active");
+      generatorView?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    // Main render entry point used by Generate, Export, and print preparation.
+    function ensureQr(force = false) {
+      const target = document.getElementById("resumeQr");
+      if (!target) return;
+      let text = "";
+      try {
+        text = getCurrentQrText();
+      } catch (error) {
+        showEmptyQrState();
+        setStatus(error.message, true);
+        return;
+      }
+      if (!text) {
+        target.replaceChildren(Object.assign(document.createElement("div"), {
+          className: "empty-state",
+          textContent: "Enter a link to generate a QR code",
+        }));
+        target.dataset.url = "";
+        const description = document.getElementById("qrDescription");
+        if (description) description.textContent = "Enter a link and generate a self-contained SVG QR code.";
+        setStatus("Please enter a link first.", true);
+        return false;
+      }
+      if (!force && target.querySelector("svg") && target.dataset.url === text) return true;
+      target.dataset.url = text;
+      target.replaceChildren(buildQrSvg(text));
+      updatePayloadPreview(text);
+      const svg = target.querySelector("svg");
+      const type = document.getElementById("qrType")?.value || "url";
+      setStatus(`QR generated for ${type === "vcard" ? "vCard contact" : text} | Version ${svg?.dataset.version || "?"}, mask ${svg?.dataset.mask || "?"}`);
+      const description = document.getElementById("qrDescription");
+      if (description) {
+        description.textContent = type === "vcard"
+          ? "This QR code contains a vCard contact payload."
+          : `This QR code links to ${text}`;
+      }
+      return true;
+    }
+
+    function renderQrFromInput() {
+      try {
+        return ensureQr(true);
+      } catch (error) {
+        setStatus(error.message, true);
+        return false;
+      }
+    }
+
+    // Clears the preview without generating a QR.
+    function showEmptyQrState(message = "Enter a link to generate a QR code") {
+      const target = document.getElementById("resumeQr");
+      if (!target) return;
+      target.replaceChildren(Object.assign(document.createElement("div"), {
+        className: "empty-state",
+        textContent: message,
+      }));
+      target.dataset.url = "";
+      setStatus("");
+    }
+
+    function printResume() {
+      ensureQr();
+      requestAnimationFrame(() => window.print());
+    }
+
+    // Expose debugging helpers in the browser console.
+    window.exportQrMatrixText = (text = getCurrentQrText()) => encodeMatrix(text).matrixText;
+    window.exportQrMatrixSignature = (text = getCurrentQrText()) => encodeMatrix(text).matrixSignature;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      runQrSelfTests();
+      showEmptyQrState();
+      document.querySelectorAll("[data-view-target]").forEach((button) => {
+        button.addEventListener("click", () => showAppView(button.dataset.viewTarget));
+      });
+      document.getElementById("qrType")?.addEventListener("change", updateQrTypeUi);
+      document.getElementById("qrUrlInput")?.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") renderQrFromInput();
+      });
+      ["vcardFullName", "vcardPhone", "vcardEmail", "vcardTitle", "vcardOrg", "vcardWebsite"].forEach((id) => {
+        document.getElementById(id)?.addEventListener("input", () => {
+          if (document.getElementById("qrType")?.value !== "vcard") return;
+          try {
+            updatePayloadPreview(buildVCardPayload());
+            setStatus("");
+          } catch {
+            updatePayloadPreview("");
+          }
+        });
+      });
+    });
+    window.addEventListener("beforeprint", ensureQr);
+	
+	// Export helpers: serialize the current SVG directly or rasterize it to PNG.
+	function downloadTextFile(filename, text, mimeType) {
+  const blob = new Blob([text], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+
+  URL.revokeObjectURL(url);
+}
+
+function sanitizeFilenamePart(value, fallback = "qr") {
+  const clean = String(value || "")
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+  return clean || fallback;
+}
+
+function getUrlFilenameHint(urlText) {
+  try {
+    const url = new URL(urlText);
+    const host = url.hostname.replace(/^www\./, "");
+    const pathParts = url.pathname.split("/").filter(Boolean);
+    const lastPath = pathParts[pathParts.length - 1] || "";
+    return sanitizeFilenamePart([host, lastPath].filter(Boolean).join("-"), "link");
+  } catch {
+    return sanitizeFilenamePart(urlText, "link");
+  }
+}
+
+function getVCardFilenameHint() {
+  return sanitizeFilenamePart(
+    getValue("vcardFullName") || getValue("vcardEmail") || getValue("vcardOrg"),
+    "contact"
+  );
+}
+
+function getQrExportFilename(extension) {
+  const type = document.getElementById("qrType")?.value || "url";
+  const hint = type === "vcard"
+    ? getVCardFilenameHint()
+    : getUrlFilenameHint(getValue("qrUrlInput"));
+  return `qr-${type === "vcard" ? "vcard" : "url"}-${hint}.${extension}`;
+}
+
+function exportQrSvg() {
+  const svg = document.querySelector("#resumeQr svg");
+  if (!svg) {
+    if (!renderQrFromInput()) return;
+  }
+
+  const finalSvg = document.querySelector("#resumeQr svg");
+  if (!finalSvg) return;
+  const serializer = new XMLSerializer();
+  const svgText = serializer.serializeToString(finalSvg);
+
+  downloadTextFile(getQrExportFilename("svg"), svgText, "image/svg+xml");
+}
+
+function exportQrPng() {
+  const svg = document.querySelector("#resumeQr svg");
+  if (!svg) {
+    if (!renderQrFromInput()) return;
+  }
+
+  const finalSvg = document.querySelector("#resumeQr svg");
+  if (!finalSvg) return;
+  const serializer = new XMLSerializer();
+  const svgText = serializer.serializeToString(finalSvg);
+
+  const svgBlob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(svgBlob);
+
+  const img = new Image();
+  img.onload = function () {
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 512;
+
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    URL.revokeObjectURL(url);
+
+    canvas.toBlob(function (blob) {
+      const pngUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = pngUrl;
+      link.download = getQrExportFilename("png");
+      link.click();
+      URL.revokeObjectURL(pngUrl);
+    }, "image/png");
+  };
+
+  img.src = url;
+}
+
+function exportQrCode() {
+  if (!renderQrFromInput()) return;
+  const format = document.getElementById("qrExportFormat")?.value || "svg";
+
+  if (format === "svg") {
+    exportQrSvg();
+  } else if (format === "png") {
+    exportQrPng();
+  }
+}
+
+  </script>
+</body>
+</html>
